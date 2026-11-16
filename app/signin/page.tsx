@@ -5,6 +5,14 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 
+const ERRORES: Record<string, string> = {
+  cidituc_missing_token: 'No recibimos el token de CiDiTuc. Intentá de nuevo.',
+  cidituc_invalid_token: 'Tu sesión de CiDiTuc no es válida o expiró.',
+  cidituc_session_failed: 'No pudimos iniciar tu sesión. Intentá de nuevo.',
+  cidituc_state: 'El ingreso venció o se abrió en otro navegador. Volvé a tocar «Ingresar con CiDiTuc».',
+  cidituc_config: 'El ingreso con CiDiTuc no está disponible en este momento.',
+}
+
 function SignInForm() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -12,15 +20,11 @@ function SignInForm() {
   const error = searchParams.get('error')
 
   const handleCiditucLogin = () => {
-    // CiDiTuc usa HashRouter y dispara el redirect leyendo ?next=hub-ia desde el
-    // hash. Por eso se concatena como string (no con URL.searchParams, que lo
-    // pondría en el query real, fuera del hash). El destino propio de hub-ia no
-    // hace falta reenviarlo: el callback aterriza en "/" por defecto.
-    const loginUrl = process.env.NEXT_PUBLIC_CIDITUC_LOGIN_URL
-    if (!loginUrl) return
+    // El servidor arma la ida a Ciudad Digital (state + ?ingreso= al azar, ver
+    // lib/cidituc-ingreso.ts). El destino propio de hub-ia no hace falta
+    // reenviarlo: el callback aterriza en "/" por defecto.
     setLoading(true)
-    const sep = loginUrl.includes('?') ? '&' : '?'
-    window.location.href = `${loginUrl}${sep}next=hub-ia`
+    window.location.href = '/auth/cidituc/login'
   }
 
   return (
@@ -43,13 +47,7 @@ function SignInForm() {
         <div className="glass rounded-3xl p-8 flex flex-col gap-6 shadow-xl border-border/50">
           {error && (
             <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center animate-in fade-in slide-in-from-top-1">
-              {error === 'cidituc_missing_token' && 'No recibimos el token de CiDiTuc. Intentá de nuevo.'}
-              {error === 'cidituc_invalid_token' && 'Tu sesión de CiDiTuc no es válida o expiró.'}
-              {error === 'cidituc_session_failed' && 'No pudimos iniciar tu sesión. Intentá de nuevo.'}
-              {error !== 'cidituc_missing_token' &&
-                error !== 'cidituc_invalid_token' &&
-                error !== 'cidituc_session_failed' &&
-                'Ocurrió un error. Intentá de nuevo.'}
+              {ERRORES[error] ?? 'Ocurrió un error. Intentá de nuevo.'}
             </div>
           )}
 

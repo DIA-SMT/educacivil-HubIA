@@ -9,9 +9,12 @@ import {
 } from '@/lib/cidituc'
 import { validateCiditucToken } from '@/lib/cidituc-backend'
 import { createServiceClient } from '@/utils/supabase/service'
+import { CIDITUC_STATE_COOKIE, stateCoincide } from '@/lib/cidituc-ingreso'
 import { ensureShadowUser, prefillCiditucProfile, repairShadowPassword } from '@/lib/cidituc-provision'
 
-// Vuelta desde CiDiTuc: /auth/cidituc/callback?auth=<token>&next=<ruta>
+// Vuelta desde Ciudad Digital: /auth/cidituc/callback?auth=<token>&state=<state>
+// 0. Compara el state con la cookie que dejó /auth/cidituc/login (protección
+//    CSRF; ver lib/cidituc-ingreso.ts). Es de un solo uso: se borra siempre.
 // 1. Verifica el token localmente (firma HS256 con el secreto compartido).
 // 2. Abre una sesión REAL de Supabase sobre un "usuario-sombra" manejado por
 //    detrás (ver lib/cidituc-provision.ts). Así el data layer (progreso,
@@ -26,16 +29,30 @@ export async function GET(request: Request) {
   const requestedNext = searchParams.get('next')
   const next = requestedNext && requestedNext.startsWith('/') ? requestedNext : '/'
   const origin = await getBaseUrl()
+  const cookieStore = await cookies()
+
+  // El state es de un solo uso: se borra pase lo que pase
+  const borrarState = (r: NextResponse) => {
+    r.cookies.set(CIDITUC_STATE_COOKIE, '', { path: '/auth/cidituc', maxAge: 0 })
+    return r
+  }
+  const conError = (codigo: string) =>
+    borrarState(NextResponse.redirect(`${origin}/signin?error=${codigo}`))
+
+  if (!stateCoincide(searchParams.get('state'), cookieStore.get(CIDITUC_STATE_COOKIE)?.value)) {
+    console.error('[cidituc] la vuelta no trae el state de este navegador (vencido, otro navegador o CSRF)')
+    return conError('cidituc_state')
+  }
 
   if (!token) {
-    return NextResponse.redirect(`${origin}/signin?error=cidituc_missing_token`)
+    return conError('cidituc_missing_token')
   }
 
   // Autenticación: verificamos la firma del token localmente con el secreto
   // compartido. No depende de una llamada de red al backend ni de su cert TLS.
   const claims = await verifyCiditucJwt(token)
   if (!claims) {
-    return NextResponse.redirect(`${origin}/signin?error=cidituc_invalid_token`)
+    return conError('cidituc_invalid_token')
   }
 
   // Best-effort: si el backend está accesible, enriquecemos con nombre/email/dni.
@@ -45,7 +62,7 @@ export async function GET(request: Request) {
 
   // Respuesta a la que colgamos tanto las cookies de sesión de Supabase como la
   // nuestra de CiDiTuc.
-  const response = NextResponse.redirect(`${origin}${next}`)
+  const response = borrarState(NextResponse.redirect(`${origin}${next}`))
 
   // --- Identidad: usuario-sombra de Supabase manejado por CiDiTuc ---
   // Aseguramos que exista el usuario de Supabase para esta persona y abrimos su
@@ -54,7 +71,6 @@ export async function GET(request: Request) {
   try {
     const { email, password } = await ensureShadowUser(claims.id)
 
-    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -96,7 +112,7 @@ export async function GET(request: Request) {
         '[cidituc] no se pudo abrir la sesión de Supabase del usuario-sombra:',
         signIn.error?.message
       )
-      return NextResponse.redirect(`${origin}/signin?error=cidituc_session_failed`)
+      return conError('cidituc_session_failed')
     }
     supabaseUserId = signIn.data.user.id
   } catch (err) {
@@ -104,7 +120,7 @@ export async function GET(request: Request) {
       '[cidituc] error creando/abriendo la sesión de Supabase:',
       err instanceof Error ? err.message : err
     )
-    return NextResponse.redirect(`${origin}/signin?error=cidituc_session_failed`)
+    return conError('cidituc_session_failed')
   }
 
   // --- Perfil legal: prellenar y bloquear con los datos oficiales de CiDiTuc ---
