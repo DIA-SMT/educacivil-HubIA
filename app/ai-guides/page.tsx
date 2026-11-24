@@ -4,8 +4,8 @@ import { AiGuidesGrid } from '@/components/ai-guides/ai-guides-grid'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Asistentes ciudadanIA — CiviLearn',
-  description: 'Asistentes prácticos para usar inteligencia artificial en participación ciudadana: verificar información, solicitar datos públicos, analizar leyes y más.',
+  title: 'Asistentes ciudadanIA — Hub IA',
+  description: 'Charlá con asistentes de inteligencia artificial pensados para la vida en Tucumán: tus derechos, estafas digitales, gastos del hogar, cocina y más.',
 }
 
 export default function AiGuidesPage() {
