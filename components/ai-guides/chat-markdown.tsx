@@ -17,7 +17,7 @@ const components: Components = {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-sky-300 underline decoration-sky-300/40 underline-offset-2 hover:decoration-sky-300"
+            className="font-medium text-sky-700 underline decoration-current/40 underline-offset-2 hover:decoration-current dark:text-sky-300"
         >
             {children}
         </a>
@@ -36,10 +36,10 @@ const components: Components = {
     code: ({ children, className }) => {
         const isBlock = /language-/.test(className ?? '')
         if (isBlock) return <code className={className}>{children}</code>
-        return <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.9em]">{children}</code>
+        return <code className="rounded bg-foreground/10 px-1.5 py-0.5 font-mono text-[0.9em]">{children}</code>
     },
     pre: ({ children }) => (
-        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-xl border border-border bg-black/30 p-4 font-mono text-[13px] leading-relaxed first:mt-0">
+        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-xl border border-border bg-muted/60 p-4 font-mono text-[13px] leading-relaxed first:mt-0">
             {children}
         </pre>
     ),
@@ -48,7 +48,7 @@ const components: Components = {
             <table className="w-full text-left text-sm">{children}</table>
         </div>
     ),
-    thead: ({ children }) => <thead className="bg-white/5 text-foreground">{children}</thead>,
+    thead: ({ children }) => <thead className="bg-foreground/5 text-foreground">{children}</thead>,
     th: ({ children }) => <th className="px-3 py-2 font-semibold">{children}</th>,
     td: ({ children }) => <td className="border-t border-border px-3 py-2 align-top">{children}</td>,
 }

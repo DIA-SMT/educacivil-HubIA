@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthRedirectHandler } from '@/components/auth/AuthRedirectHandler'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 const inter = Inter({
@@ -33,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className="dark" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -51,8 +52,11 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}>
-        <AuthRedirectHandler />
-        {children}
+        {/* Oscuro por defecto (la identidad de Hub IA); el modo claro se elige con el botón del navbar y se recuerda. */}
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="hubia-tema" disableTransitionOnChange>
+          <AuthRedirectHandler />
+          {children}
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

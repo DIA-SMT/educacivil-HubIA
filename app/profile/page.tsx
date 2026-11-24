@@ -36,7 +36,7 @@ export default async function ProfilePage({ searchParams }: Props) {
     const locked = !!profile?.profile_locked_at
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#020817]">
+        <div className="min-h-screen flex flex-col bg-background">
             <Navbar />
             <main className="flex-1 pt-24 pb-12 px-4">
                 <div className="max-w-2xl mx-auto">
@@ -48,21 +48,21 @@ export default async function ProfilePage({ searchParams }: Props) {
                     </div>
 
                     {saved && (
-                        <div className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl p-4 mb-6">
+                        <div className="flex items-start gap-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 rounded-xl p-4 mb-6">
                             <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
                             <div className="text-sm">Tus datos fueron guardados correctamente.</div>
                         </div>
                     )}
 
                     {error && errorMessages[error] && (
-                        <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-4 mb-6">
+                        <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-800 dark:text-red-300 rounded-xl p-4 mb-6">
                             <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                             <div className="text-sm">{errorMessages[error]}</div>
                         </div>
                     )}
 
                     {!locked && (
-                        <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-xl p-4 mb-6">
+                        <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 rounded-xl p-4 mb-6">
                             <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                             <div className="text-sm">
                                 <p className="font-semibold mb-1">Importante: estos datos se podrán guardar una sola vez.</p>

@@ -42,35 +42,35 @@ export interface GuideMeta {
 
 const ACCENTS = {
     violet: {
-        text: 'text-violet-300',
+        text: 'text-violet-700 dark:text-violet-300',
         soft: 'bg-violet-500/10',
         border: 'border-violet-400/30',
         glow: 'shadow-[0_0_32px_rgba(139,92,246,0.35)]',
         glowOnHover: 'group-hover:shadow-[0_0_32px_rgba(139,92,246,0.35)]',
     },
     orange: {
-        text: 'text-orange-300',
+        text: 'text-orange-700 dark:text-orange-300',
         soft: 'bg-orange-500/10',
         border: 'border-orange-400/30',
         glow: 'shadow-[0_0_32px_rgba(249,115,22,0.35)]',
         glowOnHover: 'group-hover:shadow-[0_0_32px_rgba(249,115,22,0.35)]',
     },
     cyan: {
-        text: 'text-cyan-300',
+        text: 'text-cyan-700 dark:text-cyan-300',
         soft: 'bg-cyan-500/10',
         border: 'border-cyan-400/30',
         glow: 'shadow-[0_0_32px_rgba(34,211,238,0.35)]',
         glowOnHover: 'group-hover:shadow-[0_0_32px_rgba(34,211,238,0.35)]',
     },
     emerald: {
-        text: 'text-emerald-300',
+        text: 'text-emerald-700 dark:text-emerald-300',
         soft: 'bg-emerald-500/10',
         border: 'border-emerald-400/30',
         glow: 'shadow-[0_0_32px_rgba(16,185,129,0.35)]',
         glowOnHover: 'group-hover:shadow-[0_0_32px_rgba(16,185,129,0.35)]',
     },
     blue: {
-        text: 'text-sky-300',
+        text: 'text-sky-700 dark:text-sky-300',
         soft: 'bg-sky-500/10',
         border: 'border-sky-400/30',
         glow: 'shadow-[0_0_32px_rgba(0,102,255,0.35)]',

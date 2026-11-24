@@ -150,7 +150,7 @@ export function CourseCompletionModal({
                   <motion.p
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-xs font-semibold text-amber-400"
+                    className="text-xs font-semibold text-amber-700 dark:text-amber-400"
                   >
                     {ratingLabels[rating]}
                   </motion.p>
@@ -196,7 +196,7 @@ export function CourseCompletionModal({
               </div>
             ) : (
               <div className="space-y-4 w-full">
-                <p className="text-sm font-semibold text-emerald-400">¡Gracias por tu reseña!</p>
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">¡Gracias por tu reseña!</p>
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => router.push(`/courses/${courseSlug}/certificate`)}
