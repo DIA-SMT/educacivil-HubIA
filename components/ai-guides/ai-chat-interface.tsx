@@ -1,13 +1,39 @@
 'use client'
 
-import { useChat, type UIMessage } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
-import { Send, User, Bot, Loader2, Scale, Search, ChefHat, Coins, Paperclip, ImageIcon, Smile, Mic } from 'lucide-react'
-import { useRef, useEffect, useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { useChat } from '@ai-sdk/react'
+import { DefaultChatTransport, type UIMessage } from 'ai'
+import {
+    ArrowLeft,
+    ArrowUp,
+    Check,
+    ChevronDown,
+    Copy,
+    LayoutGrid,
+    LogIn,
+    RotateCcw,
+    Sparkles,
+    Square,
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
+import { ChatMarkdown } from '@/components/ai-guides/chat-markdown'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { getGuideMeta, type GuideMeta } from '@/lib/ai-guides/meta'
+import {
+    CHAT_DAILY_LIMIT,
+    CHAT_MAX_USER_MESSAGE_CHARS,
+    type ChatErrorCode,
+    type ChatMessageMetadata,
+} from '@/lib/ai-guides/limits'
+import { cn } from '@/lib/utils'
 
 interface Guide {
     id: string
@@ -20,246 +46,483 @@ interface Guide {
 interface AiChatInterfaceProps {
     guide: Guide
     allGuides: Guide[]
+    /** Mensajes que le quedan hoy con este asistente (null si no se pudo calcular). */
+    initialRemaining: number | null
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-    Verificación: 'text-cyan-400',
-    Transparencia: 'text-amber-400',
-    'Gobernanza Digital': 'text-primary',
-    Democracia: 'text-emerald-400',
-    'Participación Ciudadana': 'text-rose-400',
-    Derecho: 'text-slate-400',
-    Hogar: 'text-orange-400',
-    'Análisis de gastos': 'text-green-400',
+type ChatMessage = UIMessage<ChatMessageMetadata>
+
+const GENERIC_ERROR = 'No pudimos conectarnos con el asistente. Revisá tu conexión y probá de nuevo.'
+
+function parseChatError(error: Error | undefined): { code: ChatErrorCode | 'unknown'; message: string } | null {
+    if (!error) return null
+    const raw = error.message?.trim() ?? ''
+    try {
+        const body = JSON.parse(raw)
+        if (body && typeof body.message === 'string') return { code: body.code ?? 'unknown', message: body.message }
+    } catch {
+        // No es JSON: puede ser el texto que manda el stream cuando se corta.
+    }
+    if (raw && raw.length < 300 && !/failed to fetch|network|load failed/i.test(raw) && !raw.startsWith('<')) {
+        return { code: 'unknown', message: raw }
+    }
+    return { code: 'unknown', message: GENERIC_ERROR }
 }
 
-const getBotIcon = (title: string) => {
-    const t = title.toLowerCase()
-    if (t.includes('legal') || t.includes('derecho') || t.includes('asesor')) return Scale
-    if (t.includes('noticias') || t.includes('fake') || t.includes('analista')) return Search
-    if (t.includes('cocina') || t.includes('receta')) return ChefHat
-    if (t.includes('bolsillo') || t.includes('gasto') || t.includes('finanza')) return Coins
-    return Bot
+function getMessageText(m: ChatMessage) {
+    return m.parts
+        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+        .map((p) => p.text)
+        .join('')
 }
 
-export function AiChatInterface({ guide, allGuides }: AiChatInterfaceProps) {
+function GuideAvatar({ meta, size = 'md', className }: { meta: GuideMeta; size?: 'sm' | 'md' | 'lg'; className?: string }) {
+    const Icon = meta.icon
+    return (
+        <div
+            className={cn(
+                'flex shrink-0 items-center justify-center border',
+                meta.accent.soft,
+                meta.accent.border,
+                meta.accent.text,
+                size === 'sm' && 'h-8 w-8 rounded-lg',
+                size === 'md' && 'h-10 w-10 rounded-xl',
+                size === 'lg' && cn('h-20 w-20 rounded-3xl', meta.accent.glow),
+                className,
+            )}
+        >
+            <Icon className={cn(size === 'sm' && 'h-4 w-4', size === 'md' && 'h-5 w-5', size === 'lg' && 'h-10 w-10')} />
+        </div>
+    )
+}
+
+function CopyButton({ text }: { text: string }) {
+    const [copied, setCopied] = useState(false)
+    return (
+        <button
+            type="button"
+            onClick={async () => {
+                try {
+                    await navigator.clipboard.writeText(text)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 1500)
+                } catch {
+                    // Sin permiso para el portapapeles: no hacemos nada.
+                }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            aria-label="Copiar respuesta"
+        >
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? 'Copiado' : 'Copiar'}
+        </button>
+    )
+}
+
+function ThinkingBubble({ meta }: { meta: GuideMeta }) {
+    const [index, setIndex] = useState(0)
+    useEffect(() => {
+        const id = setInterval(() => setIndex((i) => (i + 1) % meta.thinking.length), 2200)
+        return () => clearInterval(id)
+    }, [meta.thinking.length])
+
+    return (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3">
+            <GuideAvatar meta={meta} size="sm" className="mt-0.5" />
+            <div className="flex items-center gap-3 rounded-2xl rounded-tl-md border border-border bg-card/80 px-4 py-3">
+                <span className="flex gap-1" aria-hidden>
+                    {[0, 1, 2].map((i) => (
+                        <motion.span
+                            key={i}
+                            className={cn('h-1.5 w-1.5 rounded-full bg-current', meta.accent.text)}
+                            animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
+                        />
+                    ))}
+                </span>
+                <AnimatePresence mode="wait">
+                    <motion.span
+                        key={index}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="text-sm text-muted-foreground"
+                    >
+                        {meta.thinking[index]}
+                    </motion.span>
+                </AnimatePresence>
+            </div>
+        </motion.div>
+    )
+}
+
+export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatInterfaceProps) {
+    const meta = getGuideMeta(guide)
     const [inputValue, setInputValue] = useState('')
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const scrollRef = useRef<HTMLDivElement>(null)
+    const stickToBottom = useRef(true)
 
-    // Configurar el transporte para la API de chat
-    const transport = useMemo(() => new DefaultChatTransport({
-        api: '/api/chat',
-        body: {
-            guideId: guide.id,
-        },
-    }), [guide.id])
+    const transport = useMemo(
+        () => new DefaultChatTransport({ api: '/api/chat', body: { guideId: guide.id } }),
+        [guide.id],
+    )
 
-    const { messages, sendMessage, status, error } = useChat({
+    const { messages, sendMessage, status, error, stop, regenerate, setMessages, clearError } = useChat<ChatMessage>({
         id: `chat-${guide.id}`,
         transport,
-        messages: [
-            {
-                id: 'welcome',
-                role: 'assistant',
-                parts: [
-                    {
-                        type: 'text',
-                        text: `¡Hola! Soy tu ${guide.title}. Estoy listo para ayudarte con: *${guide.objective}*\n\n¿Cuál es tu primera consulta?`,
-                    },
-                ],
-            } as UIMessage,
-        ],
     })
 
-    const isLoading = status === 'submitted' || status === 'streaming'
-    const messagesEndRef = useRef<HTMLDivElement>(null)
+    const isBusy = status === 'submitted' || status === 'streaming'
+    const chatError = parseChatError(error)
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+    // Mensajes restantes: el último dato que mandó el servidor, o el inicial.
+    const remaining = useMemo(() => {
+        if (chatError?.code === 'rate_limit') return 0
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const r = messages[i].metadata?.remaining
+            if (typeof r === 'number') return r
+        }
+        return initialRemaining
+    }, [messages, initialRemaining, chatError?.code])
+    const outOfMessages = remaining === 0
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value)
+    const lastMessage = messages[messages.length - 1]
+    const waitingFirstToken =
+        status === 'submitted' ||
+        (status === 'streaming' && lastMessage?.role === 'assistant' && !getMessageText(lastMessage))
+
+    // Scroll: seguimos el final de la charla salvo que la persona haya subido a leer.
+    const handleScroll = () => {
+        const el = scrollRef.current
+        if (!el) return
+        stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96
     }
+    useEffect(() => {
+        const el = scrollRef.current
+        if (!el) return
+        if (messages.length === 0) {
+            el.scrollTop = 0 // la bienvenida se lee desde arriba
+            return
+        }
+        if (stickToBottom.current) el.scrollTop = el.scrollHeight
+    }, [messages, status, error])
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!inputValue.trim() || isLoading) return
+    // Textarea que crece con el contenido.
+    useEffect(() => {
+        const ta = textareaRef.current
+        if (!ta) return
+        ta.style.height = 'auto'
+        ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`
+    }, [inputValue])
 
-        const text = inputValue
-        setInputValue('')
+    const send = useCallback(
+        async (raw: string) => {
+            const text = raw.trim()
+            if (!text || isBusy || outOfMessages || text.length > CHAT_MAX_USER_MESSAGE_CHARS) return
+            clearError()
+            stickToBottom.current = true
+            setInputValue('')
+            try {
+                await sendMessage({ text })
+            } catch (err) {
+                console.error('Error sending message:', err)
+            }
+        },
+        [isBusy, outOfMessages, sendMessage, clearError],
+    )
 
-        try {
-            await sendMessage({ text })
-        } catch (err) {
-            console.error('Error sending message:', err)
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault()
+            void send(inputValue)
         }
     }
 
-    const getMessageText = (m: UIMessage) => {
-        return m.parts
-            .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-            .map(p => p.text)
-            .join('')
+    const resetChat = () => {
+        stop()
+        clearError()
+        setMessages([])
+        setInputValue('')
+        textareaRef.current?.focus()
     }
 
+    const charsLeft = CHAT_MAX_USER_MESSAGE_CHARS - inputValue.length
+    const isEmpty = messages.length === 0
+    const otherGuides = allGuides.filter((g) => g.id !== guide.id)
+
     return (
-        <div className="flex w-full h-[calc(100vh-80px)] bg-background text-foreground overflow-hidden font-sans">
-            {/* Sidebar */}
-            <div className="w-80 border-r border-border bg-card p-4 flex flex-col gap-4 hidden md:flex">
-                <h2 className="text-[11px] font-semibold text-muted-foreground tracking-wider mb-2">TUS CHATBOTS CIUDADANOS ACTIVAS</h2>
-                <div className="flex-1 overflow-y-auto space-y-3">
-                    {allGuides.map(g => {
-                        const Icon = getBotIcon(g.title)
+        <div className="flex h-[calc(100dvh-4rem)] w-full overflow-hidden bg-background text-foreground">
+            {/* Lista de asistentes (escritorio) */}
+            <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-card/40 md:flex lg:w-80">
+                <div className="px-5 pb-3 pt-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Asistentes ciudadanIA</p>
+                </div>
+                <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
+                    {allGuides.map((g) => {
+                        const gMeta = getGuideMeta(g)
                         const isActive = g.id === guide.id
                         return (
-                            <Link href={`/ai-guides/${g.slug}`} key={g.id}>
-                                <div className={`px-2 py-3 rounded-xl flex items-start gap-4 cursor-pointer transition-all ${isActive ? 'bg-primary/5 border-l-2 border-primary' : 'border-l-2 border-transparent hover:bg-muted/50'}`}>
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 shrink-0 ${isActive ? 'border-primary text-primary shadow-[0_0_15px_rgba(0,102,255,0.3)]' : 'border-border text-muted-foreground'}`}>
-                                        <Icon className="w-6 h-6" />
-                                    </div>
-                                    <div className="flex-1 min-w-0 pt-0.5">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h3 className="font-semibold text-sm truncate pr-2 text-foreground">{g.title}</h3>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full bg-muted border border-border whitespace-nowrap ${CATEGORY_COLORS[g.category] || 'text-muted-foreground'}`}>
-                                                {g.category}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-green-500 pointer-events-none'}`} />
-                                            <span className={`text-xs ${isActive ? 'text-green-500' : 'text-green-500 pointer-events-none'}`}>{isActive ? 'En línea (Punto verde)' : 'Disponible'}</span>
-                                        </div>
-                                    </div>
+                            <Link
+                                key={g.id}
+                                href={`/ai-guides/${g.slug}`}
+                                aria-current={isActive ? 'page' : undefined}
+                                className={cn(
+                                    'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
+                                    isActive ? 'bg-white/[0.06] ring-1 ring-white/10' : 'hover:bg-white/[0.04]',
+                                )}
+                            >
+                                <GuideAvatar meta={gMeta} size="md" />
+                                <div className="min-w-0 flex-1">
+                                    <p className={cn('truncate text-sm font-medium', isActive ? 'text-foreground' : 'text-foreground/85')}>
+                                        {g.title}
+                                    </p>
+                                    <p className="truncate text-xs text-muted-foreground">{g.category}</p>
                                 </div>
                             </Link>
                         )
                     })}
+                </nav>
+                <div className="border-t border-border p-3">
+                    <Link
+                        href="/ai-guides"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                    >
+                        <LayoutGrid className="h-4 w-4" />
+                        Ver todos los asistentes
+                    </Link>
                 </div>
-            </div>
+            </aside>
 
-            {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-background">
-                {/* Header */}
-                <div className="h-20 border-b border-border px-6 lg:px-8 flex items-center gap-4 bg-card/50">
-                    <div className="w-14 h-14 rounded-full border-2 border-primary/60 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(0,102,255,0.25)] shrink-0">
-                        {(() => {
-                            const HeaderIcon = getBotIcon(guide.title)
-                            return <HeaderIcon className="w-7 h-7" />
-                        })()}
+            {/* Charla */}
+            <section className="flex min-w-0 flex-1 flex-col">
+                {/* Encabezado */}
+                <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card/40 px-3 sm:px-6">
+                    <Link
+                        href="/ai-guides"
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground md:hidden"
+                        aria-label="Volver a los asistentes"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Link>
+                    <GuideAvatar meta={meta} size="md" />
+                    <div className="min-w-0 flex-1">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                className="flex max-w-full items-center gap-1 rounded-md text-left focus:outline-none md:pointer-events-none"
+                                disabled={otherGuides.length === 0}
+                            >
+                                <h1 className="truncate text-base font-semibold sm:text-lg">{guide.title}</h1>
+                                {otherGuides.length > 0 && <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground md:hidden" />}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-72">
+                                <DropdownMenuLabel className="text-xs text-muted-foreground">Cambiar de asistente</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {otherGuides.map((g) => {
+                                    const gMeta = getGuideMeta(g)
+                                    return (
+                                        <DropdownMenuItem key={g.id} asChild>
+                                            <Link href={`/ai-guides/${g.slug}`} className="flex items-center gap-3">
+                                                <GuideAvatar meta={gMeta} size="sm" />
+                                                <span className="truncate">{g.title}</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )
+                                })}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <p className="truncate text-xs text-muted-foreground">{guide.category}</p>
                     </div>
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="font-bold text-lg lg:text-xl text-foreground">{guide.title}</h1>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-sm text-green-500 mt-1">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
-                            En línea
-                        </div>
-                    </div>
-                </div>
+                    {!isEmpty && (
+                        <button
+                            type="button"
+                            onClick={resetChat}
+                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                        >
+                            <RotateCcw className="h-4 w-4" />
+                            <span className="hidden sm:inline">Nueva charla</span>
+                        </button>
+                    )}
+                </header>
 
-                {/* Chat Messages */}
-                <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6">
-                    <div className="max-w-4xl mx-auto space-y-6 w-full">
-                        {messages.map((m: UIMessage) => {
-                            const content = getMessageText(m)
-                            if (!content && m.role === 'assistant' && !isLoading) return null
+                {/* Mensajes */}
+                <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto">
+                    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+                        {isEmpty ? (
+                            // Animación por CSS: se ve aunque el JS todavía no haya hidratado la página.
+                            <div className="flex flex-col items-center pt-2 text-center animate-in fade-in-0 slide-in-from-bottom-3 duration-500 sm:pt-8">
+                                <GuideAvatar meta={meta} size="lg" />
+                                <div className="mt-6 max-w-xl text-[15px] text-foreground/90 sm:text-base">
+                                    <ChatMarkdown content={meta.greeting} />
+                                </div>
+                                <div className="mt-8 grid w-full gap-2.5 sm:grid-cols-2">
+                                    {meta.starters.map((s) => (
+                                        <button
+                                            key={s}
+                                            type="button"
+                                            onClick={() => void send(s)}
+                                            disabled={outOfMessages}
+                                            className={cn(
+                                                'group flex items-start gap-3 rounded-2xl border border-border bg-card/60 px-4 py-3 text-left text-sm text-foreground/85 transition-all',
+                                                'hover:-translate-y-0.5 hover:bg-card hover:text-foreground disabled:pointer-events-none disabled:opacity-50',
+                                            )}
+                                        >
+                                            <Sparkles className={cn('mt-0.5 h-4 w-4 shrink-0 opacity-70 group-hover:opacity-100', meta.accent.text)} />
+                                            <span>{s}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {messages.map((m, i) => {
+                                    const content = getMessageText(m)
+                                    if (!content) return null
+                                    const isStreamingThis = status === 'streaming' && i === messages.length - 1
 
-                            return (
-                                <motion.div
-                                    key={m.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                                >
-                                    {m.role === 'assistant' && (
-                                        <div className="w-12 h-12 shadow-[0_0_15px_rgba(0,102,255,0.15)] rounded-full border-2 border-primary/40 bg-card flex flex-shrink-0 items-center justify-center text-primary">
-                                            {(() => {
-                                                const MsgIcon = getBotIcon(guide.title)
-                                                return <MsgIcon className="w-6 h-6" />
-                                            })()}
-                                        </div>
-                                    )}
+                                    if (m.role === 'user') {
+                                        return (
+                                            <motion.div
+                                                key={m.id}
+                                                initial={{ opacity: 0, y: 6 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="flex justify-end"
+                                            >
+                                                <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-primary px-4 py-2.5 text-[15px] leading-relaxed text-primary-foreground sm:max-w-[75%]">
+                                                    {content}
+                                                </div>
+                                            </motion.div>
+                                        )
+                                    }
 
-                                    <div
-                                        className={`max-w-[85%] rounded-3xl ${m.role === 'assistant' ? 'rounded-tl-sm' : 'rounded-tr-sm'} px-6 py-4 text-[15px] prose prose-sm dark:prose-invert max-w-none shadow-sm ${m.role === 'user'
-                                            ? 'bg-primary text-primary-foreground prose-a:text-primary-foreground/80 border border-primary/30'
-                                            : 'bg-muted text-foreground border border-border'
-                                            }`}
+                                    return (
+                                        <motion.div
+                                            key={m.id}
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="group flex items-start gap-3"
+                                        >
+                                            <GuideAvatar meta={meta} size="sm" className="mt-0.5" />
+                                            <div className="min-w-0 max-w-[calc(100%-2.75rem)]">
+                                                <div className="break-words rounded-2xl rounded-tl-md border border-border bg-card/80 px-4 py-3 text-[15px] text-foreground/90">
+                                                    <ChatMarkdown content={content} />
+                                                </div>
+                                                {!isStreamingThis && (
+                                                    <div className="mt-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                                                        <CopyButton text={content} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )
+                                })}
+
+                                {waitingFirstToken && <ThinkingBubble meta={meta} />}
+                            </div>
+                        )}
+
+                        {chatError && (
+                            <div
+                                role="alert"
+                                className="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 sm:flex-row sm:items-center"
+                            >
+                                <p className="flex-1">{chatError.message}</p>
+                                {chatError.code === 'unauthorized' ? (
+                                    <Link
+                                        href="/signin"
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400/20 px-3 py-1.5 font-medium hover:bg-amber-400/30"
                                     >
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {content}
-                                        </ReactMarkdown>
-                                    </div>
-
-                                    {m.role === 'user' && (
-                                        <div className="w-10 h-10 rounded-full bg-primary flex flex-shrink-0 items-center justify-center text-primary-foreground border border-primary/50">
-                                            <User className="w-5 h-5" />
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )
-                        })}
-
-                        {isLoading && (
-                            <div className="flex gap-4 justify-start">
-                                <div className="w-12 h-12 rounded-full border-2 border-primary/40 bg-card flex flex-shrink-0 items-center justify-center text-primary">
-                                    <Bot className="w-6 h-6" />
-                                </div>
-                                <div className="bg-muted text-foreground border border-border rounded-3xl rounded-tl-sm px-6 py-4 flex items-center gap-3">
-                                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                                    <span className="text-[15px] font-medium text-muted-foreground">Escribiendo...</span>
-                                </div>
+                                        <LogIn className="h-4 w-4" /> Ingresar
+                                    </Link>
+                                ) : chatError.code !== 'rate_limit' && chatError.code !== 'too_long' ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            stickToBottom.current = true
+                                            void regenerate()
+                                        }}
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400/20 px-3 py-1.5 font-medium hover:bg-amber-400/30"
+                                    >
+                                        <RotateCcw className="h-4 w-4" /> Reintentar
+                                    </button>
+                                ) : null}
                             </div>
                         )}
-
-                        {error && (
-                            <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
-                                Hubo un error al enviar el mensaje. Por favor intenta de nuevo.
-                            </div>
-                        )}
-
-                        <div ref={messagesEndRef} />
                     </div>
                 </div>
 
-                {/* Input form */}
-                <div className="p-4 lg:p-6 bg-card border-t border-border">
-                    <div className="max-w-4xl mx-auto">
-                        <form onSubmit={handleSubmit} className="relative flex items-center rounded-2xl border border-border bg-input/50 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 transition-all">
-                            <button type="button" className="pl-4 pr-2 text-muted-foreground hover:text-foreground transition-colors">
-                                <Paperclip className="w-5 h-5" />
-                            </button>
-                            
-                            <input
+                {/* Caja de texto */}
+                <div className="shrink-0 border-t border-border bg-card/40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
+                    <div className="mx-auto max-w-3xl">
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault()
+                                void send(inputValue)
+                            }}
+                            className={cn(
+                                'flex items-end gap-2 rounded-2xl border border-border bg-background/60 p-2 pl-4 transition-shadow',
+                                'focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20',
+                                outOfMessages && 'opacity-60',
+                            )}
+                        >
+                            <textarea
+                                ref={textareaRef}
                                 value={inputValue}
-                                onChange={handleInputChange}
-                                placeholder="Escribe tu mensaje..."
-                                className="flex-1 bg-transparent px-2 py-4 focus:outline-none font-medium text-foreground placeholder:text-muted-foreground"
-                                disabled={isLoading}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                rows={1}
+                                maxLength={CHAT_MAX_USER_MESSAGE_CHARS}
+                                disabled={outOfMessages}
+                                placeholder={
+                                    outOfMessages
+                                        ? 'Por hoy llegaste al límite de mensajes con este asistente'
+                                        : isEmpty
+                                          ? 'Contame en qué te ayudo…'
+                                          : 'Escribí tu mensaje…'
+                                }
+                                aria-label="Mensaje"
+                                className="max-h-[200px] flex-1 resize-none bg-transparent py-2 text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed"
                             />
-                            
-                            <div className="flex items-center pr-2 gap-1 text-muted-foreground">
-                                <button type="button" className="p-2 hover:text-foreground transition-colors">
-                                    <ImageIcon className="w-5 h-5" />
+                            {isBusy ? (
+                                <button
+                                    type="button"
+                                    onClick={() => stop()}
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-foreground transition-colors hover:bg-white/15"
+                                    aria-label="Detener respuesta"
+                                    title="Detener"
+                                >
+                                    <Square className="h-4 w-4 fill-current" />
                                 </button>
-                                <button type="button" className="p-2 hover:text-foreground transition-colors hidden sm:block">
-                                    <Smile className="w-5 h-5" />
-                                </button>
-                                <button type="button" className="p-2 hover:text-foreground transition-colors">
-                                    <Mic className="w-5 h-5" />
-                                </button>
+                            ) : (
                                 <button
                                     type="submit"
-                                    disabled={isLoading || !inputValue.trim()}
-                                    className="p-2 ml-1 aspect-square rounded-full bg-primary text-primary-foreground flex flex-shrink-0 items-center justify-center hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                                    disabled={!inputValue.trim() || outOfMessages}
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:bg-white/10 disabled:text-muted-foreground"
+                                    aria-label="Enviar mensaje"
+                                    title="Enviar"
                                 >
-                                    <Send className="w-4 h-4" />
+                                    <ArrowUp className="h-5 w-5" />
                                 </button>
-                            </div>
+                            )}
                         </form>
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1 text-[11px] text-muted-foreground">
+                            <span>La IA puede equivocarse. No compartas claves ni datos bancarios.</span>
+                            <span className="flex items-center gap-3">
+                                {charsLeft < 300 && (
+                                    <span className={cn(charsLeft < 50 && 'text-amber-400')}>{charsLeft} caracteres</span>
+                                )}
+                                {remaining !== null && (
+                                    <span className={cn(remaining <= 1 && 'text-amber-400')}>
+                                        {remaining === 0
+                                            ? 'Sin mensajes por hoy'
+                                            : `${remaining} de ${CHAT_DAILY_LIMIT} mensajes por hoy`}
+                                    </span>
+                                )}
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     )
 }
