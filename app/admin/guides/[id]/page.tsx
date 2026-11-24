@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { GuidePromptHelp } from '@/components/admin/guide-prompt-help'
 
 export const revalidate = 0
 
@@ -28,7 +29,7 @@ export default async function EditGuidePage({
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground">Editar Agente</h1>
-                    <p className="text-muted-foreground mt-2">Configura la personalidad y el objetivo del agente de IA.</p>
+                    <p className="text-muted-foreground mt-2">Ajustá la personalidad y el objetivo del asistente.</p>
                 </div>
                 <Link href="/admin/guides">
                     <Button variant="outline">Volver</Button>
@@ -54,9 +55,9 @@ export default async function EditGuidePage({
                     <Input id="objective" name="objective" defaultValue={guide.objective} required />
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="system_prompt">System Prompt (El "Cerebro" de la IA)</Label>
-                    <p className="text-xs text-muted-foreground mb-2">Aquí es donde defines cómo debe comportarse la IA, qué sabe y qué no sabe.</p>
+                <div className="space-y-3">
+                    <Label htmlFor="system_prompt">System prompt: la especialidad del asistente</Label>
+                    <GuidePromptHelp title={guide.title} />
                     <Textarea
                         id="system_prompt"
                         name="system_prompt"
