@@ -1,3 +1,17 @@
+# Supabase
+
+## Configuración de Auth (importante)
+
+El ingreso público a Hub IA es **solo con CiDiTuc**. La clave anon de Supabase es pública (viaja en el navegador), así que cualquiera puede llamar a `auth.signUp` o al login con Google directo contra Supabase, sin pasar por nuestras páginas. Para que no se puedan crear cuentas por fuera de CiDiTuc, en **Authentication** tiene que quedar así:
+
+- **Allow new users to sign up: desactivado.** Las cuentas de los vecinos las crea el callback de CiDiTuc con la API de administración (`auth.admin.createUser` en `lib/cidituc-provision.ts`), que sigue andando con el registro cerrado.
+- **Proveedor Google: desactivado.**
+- **Admins:** se crean desde el dashboard (Authentication → Users → Add user) y se les pone el rol con SQL: `update profiles set role = 'admin' where id = '<uuid>';`. Entran por `/login` con mail y contraseña.
+
+Para chequearlo: `GET <PROJECT_URL>/auth/v1/settings` con el header `apikey: <ANON_KEY>` tiene que devolver `"disable_signup": true` y `"google": false` dentro de `external`.
+
+---
+
 # Supabase Keepalive Mechanism (v2)
 
 This project uses a keepalive mechanism to prevent the Supabase Free tier project from being paused due to inactivity.

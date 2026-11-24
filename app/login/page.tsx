@@ -1,5 +1,5 @@
-import { login, signup } from './actions'
-import { Lock, Mail, ShieldAlert, Cpu, ArrowRight } from 'lucide-react'
+import { login } from './actions'
+import { Lock, Mail, ShieldAlert, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function LoginPage({
@@ -80,15 +80,7 @@ export default async function LoginPage({
                                     AUTORIZAR INGRESO
                                     <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                                 </button>
-                                
-                                <button
-                                    formAction={signup}
-                                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 font-bold text-[11px] uppercase tracking-widest transition-all border border-white/5"
-                                >
-                                    <Cpu className="w-3.5 h-3.5" />
-                                    Generar Acceso Demo
-                                </button>
-                                
+
                                 <Link
                                     href="/auth/forgot-password"
                                     className="text-[10px] text-center font-bold text-red-500/50 hover:text-red-500 transition-colors uppercase tracking-widest pt-2"
