@@ -148,8 +148,8 @@ export function HeroSection() {
             onLoad={handleSplineLoad}
           />
         )}
-        {/* Overlay to keep text readable */}
-        <div className="absolute inset-0 bg-background/40 pointer-events-none md:bg-background/20" />
+        {/* Velo para que el texto se lea sobre el robot: más denso en el centro, donde va el texto */}
+        <div className="hero-scrim absolute inset-0 pointer-events-none" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 flex flex-col items-center text-center gap-8 pointer-events-none">

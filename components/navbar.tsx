@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Menu, X, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserAuthButton } from '@/components/auth/UserAuthButton'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const navLinks = [
   { href: '/courses', label: 'Cursos' },
@@ -44,19 +45,23 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Desktop right side: Auth button */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Desktop right side: tema + usuario */}
+        <div className="hidden md:flex items-center gap-2">
+          <ThemeToggle />
           <UserAuthButton />
         </div>
 
-        {/* Mobile Toggle */}
-        <button
-          className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? <X className="w-5 h-5" suppressHydrationWarning /> : <Menu className="w-5 h-5" suppressHydrationWarning />}
-        </button>
+        {/* Mobile: tema + menú */}
+        <div className="md:hidden flex items-center gap-1">
+          <ThemeToggle />
+          <button
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          >
+            {menuOpen ? <X className="w-5 h-5" suppressHydrationWarning /> : <Menu className="w-5 h-5" suppressHydrationWarning />}
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu */}

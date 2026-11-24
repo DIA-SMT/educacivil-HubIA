@@ -106,7 +106,7 @@ export default function ForgotPasswordPage() {
                     </Link>
                 </div>
 
-                <main className="glass shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] rounded-[2.5rem] p-10 border border-white/5 backdrop-blur-3xl">
+                <main className="glass shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] rounded-[2.5rem] p-10 border border-border backdrop-blur-3xl">
                     <Suspense fallback={<Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />}>
                         <ForgotPasswordForm />
                     </Suspense>

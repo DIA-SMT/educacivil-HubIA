@@ -10,7 +10,8 @@ export default async function LoginPage({
     const { error } = await searchParams
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-[#050507] p-6 relative overflow-hidden font-sans">
+        // Login de admin: misma estética oscura que el panel, sin importar el tema elegido.
+        <div className="dark flex min-h-screen flex-col items-center justify-center bg-[#050507] p-6 relative overflow-hidden font-sans">
             {/* Background elements for atmosphere */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-900/10 blur-[120px] rounded-full"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-red-900/5 blur-[120px] rounded-full"></div>

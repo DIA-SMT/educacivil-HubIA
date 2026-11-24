@@ -3,28 +3,45 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Temas: claro (:root) y oscuro (.dark). next-themes pone la clase en <html>;
+ * el panel admin y /login fuerzan .dark en su contenedor.
+ * Contrastes pensados para WCAG AA: texto común >= 4.5:1 contra fondo y tarjetas.
+ */
 :root {
-  --background: #ffffff;
-  --background-elevated: #f8fafc;
-  --foreground: #020817;
+  --background: #f5f7fb;
+  --background-elevated: #ffffff;
+  --foreground: #0b1220;
   --card: #ffffff;
-  --card-foreground: #020817;
+  --card-foreground: #0b1220;
   --popover: #ffffff;
-  --popover-foreground: #020817;
+  --popover-foreground: #0b1220;
   --primary: #0066ff;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
+  /* Azul para texto (links, títulos): más oscuro que el de los botones para que se lea sobre fondo claro. */
+  --primary-text: #0058e0;
+  --secondary: #eaf0f7;
   --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
+  --muted: #eaf0f7;
+  --muted-foreground: #4f5d73;
+  --accent: #eaf0f7;
   --accent-foreground: #0f172a;
-  --destructive: #ef4444;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --border: #d5dde9;
+  --input: #d5dde9;
   --ring: #0066ff;
   --radius: 0.75rem;
+  /* Textos "neón" de los títulos: sin resplandor en modo claro. */
+  --neon: #0058e0;
+  --neon-cyan: #0a78b8;
+  --neon-glow: none;
+  --neon-cyan-glow: none;
+  --glow-primary: 0 10px 30px -8px #0066ff59;
+  --glass-border: #0066ff24;
+  --hero-scrim-center: 88%;
+  --hero-scrim-mid: 72%;
+  --hero-scrim-edge: 50%;
   /* Charts */
   --chart-1: #0066ff;
   --chart-2: #2eb1ff;
@@ -44,25 +61,37 @@
 
 .dark {
   --background: #020817;
-  --background-elevated: #0f172a;
+  --background-elevated: #0d1527;
   --foreground: #f8fafc;
-  --card: #020817;
+  /* Las tarjetas se despegan un poco del fondo para que no se pierdan. */
+  --card: #0a1222;
   --card-foreground: #f8fafc;
-  --popover: #020817;
+  --popover: #0d1527;
   --popover-foreground: #f8fafc;
   --primary: #0066ff;
   --primary-foreground: #ffffff;
-  --secondary: #1e293b;
+  /* El azul de los botones (#0066ff) no llega a 4.5:1 como texto sobre el fondo oscuro. */
+  --primary-text: #5c9dff;
+  --secondary: #18233a;
   --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
+  --muted: #18233a;
+  --muted-foreground: #aab6c8;
+  --accent: #18233a;
   --accent-foreground: #f8fafc;
-  --destructive: #7f1d1d;
+  --destructive: #b91c1c;
   --destructive-foreground: #f8fafc;
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #0066ff;
+  --border: #26344d;
+  --input: #26344d;
+  --ring: #3d85ff;
+  --neon: #2f7dff;
+  --neon-cyan: #2eb1ff;
+  --neon-glow: 0 0 10px #0066ff80;
+  --neon-cyan-glow: 0 0 10px #2eb1ff80;
+  --glow-primary: 0 0 20px #0066ff59, 0 0 40px #0066ff26;
+  --glass-border: #3d85ff33;
+  --hero-scrim-center: 78%;
+  --hero-scrim-mid: 55%;
+  --hero-scrim-edge: 20%;
   --chart-1: #0066ff;
   --chart-2: #2eb1ff;
   --chart-3: #10b981;
@@ -128,6 +157,10 @@
   }
   html {
     scroll-behavior: smooth;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   /* Optimiza el compositing del navbar fijo */
   header[class*='fixed'] {
@@ -137,8 +170,17 @@
 }
 
 @layer utilities {
+  /*
+   * text-primary usa el azul "de texto" del tema (--primary-text) en lugar del de los
+   * botones. Va con :root delante para ganarle en especificidad a la utilidad de Tailwind.
+   */
+  :root .text-primary,
+  :root .hover\:text-primary:hover,
+  :root .group:hover .group-hover\:text-primary {
+    color: var(--primary-text);
+  }
   .glow-primary {
-    box-shadow: 0 0 20px #0066ff59, 0 0 40px #0066ff26;
+    box-shadow: var(--glow-primary);
   }
   .glow-cyan {
     box-shadow: 0 0 20px #2eb1ff59, 0 0 40px #2eb1ff26;
@@ -147,27 +189,36 @@
     box-shadow: inset 0 0 0 1px #0066ff66, 0 0 15px #0066ff26;
   }
   .glass {
-    background: color-mix(in srgb, var(--card) 70%, transparent);
+    background: color-mix(in srgb, var(--card) 80%, transparent);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid #0066ff26;
+    border: 1px solid var(--glass-border);
   }
   .glass-strong {
-    background: color-mix(in srgb, var(--card) 85%, transparent);
+    background: color-mix(in srgb, var(--card) 90%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #0066ff33;
+    border: 1px solid var(--glass-border);
   }
   .neon-text {
-    color: #0066ff;
-    text-shadow: 0 0 10px #0066ff80;
+    color: var(--neon);
+    text-shadow: var(--neon-glow);
   }
   .neon-text-cyan {
-    color: #2eb1ff;
-    text-shadow: 0 0 10px #2eb1ff80;
+    color: var(--neon-cyan);
+    text-shadow: var(--neon-cyan-glow);
   }
   .gradient-primary {
     background: linear-gradient(135deg, #0066ff, #2eb1ff);
+  }
+  /* Velo de la portada sobre la escena 3D: tapa más en el centro, donde va el texto. */
+  .hero-scrim {
+    background: radial-gradient(
+      ellipse 70% 62% at 50% 46%,
+      color-mix(in srgb, var(--background) var(--hero-scrim-center), transparent) 0%,
+      color-mix(in srgb, var(--background) var(--hero-scrim-mid), transparent) 60%,
+      color-mix(in srgb, var(--background) var(--hero-scrim-edge), transparent) 100%
+    );
   }
 }
 

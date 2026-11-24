@@ -788,7 +788,7 @@ function Classroom({ course, relatedGuide, initialFeedback = [] }: ClassroomView
                 className={cn(
                   'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold shrink-0 transition-all duration-200',
                   isCompleted
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-default'
+                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 cursor-default'
                     : canMarkComplete
                       ? 'bg-primary text-primary-foreground glow-primary hover:opacity-90'
                       : 'bg-secondary text-muted-foreground cursor-not-allowed opacity-50'

@@ -24,7 +24,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     return (
-        <div className="min-h-screen bg-[#050507] text-slate-200 flex flex-col md:flex-row font-sans">
+        // El panel admin tiene su propia estética oscura: fuerza .dark sin importar el tema elegido.
+        <div className="dark min-h-screen bg-[#050507] text-slate-200 flex flex-col md:flex-row font-sans">
             {/* Sidebar for Admin */}
             <aside className="w-full md:w-72 md:sticky md:top-0 md:h-screen md:overflow-y-auto border-r border-red-950/30 bg-[#0a0a0c]/80 backdrop-blur-xl p-6 flex flex-col gap-8">
                 <div className="flex flex-col gap-1">

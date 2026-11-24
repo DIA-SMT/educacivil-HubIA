@@ -77,7 +77,7 @@ export function CourseCard({ course, featured = false }: CourseCardProps) {
         </div>
 
         {course.rating > 0 ? (
-          <div className="flex items-center gap-1 text-amber-400">
+          <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
             <Star className="w-3.5 h-3.5 fill-amber-400" />
             <span className="text-xs font-semibold">{course.rating}</span>
             {course.students > 0 && (

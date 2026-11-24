@@ -114,10 +114,10 @@ function CopyButton({ text }: { text: string }) {
                     // Sin permiso para el portapapeles: no hacemos nada.
                 }
             }}
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
             aria-label="Copiar respuesta"
         >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copiado' : 'Copiar'}
         </button>
     )
@@ -273,7 +273,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                                 aria-current={isActive ? 'page' : undefined}
                                 className={cn(
                                     'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
-                                    isActive ? 'bg-white/[0.06] ring-1 ring-white/10' : 'hover:bg-white/[0.04]',
+                                    isActive ? 'bg-foreground/[0.06] ring-1 ring-foreground/10' : 'hover:bg-foreground/[0.05]',
                                 )}
                             >
                                 <GuideAvatar meta={gMeta} size="md" />
@@ -295,7 +295,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                         href={MIGUE_TELEGRAM_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
                     >
                         <Send className="h-4 w-4" />
                         Migue en Telegram
@@ -305,7 +305,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                         href={CIUDAD_DIGITAL_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
                     >
                         <Landmark className="h-4 w-4" />
                         Ciudad Digital
@@ -314,7 +314,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                     <div className="my-1 border-t border-border" />
                     <Link
                         href="/ai-guides"
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
                     >
                         <LayoutGrid className="h-4 w-4" />
                         Ver todos los asistentes
@@ -328,7 +328,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                 <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card/40 px-3 sm:px-6">
                     <Link
                         href="/ai-guides"
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground md:hidden"
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground md:hidden"
                         aria-label="Volver a los asistentes"
                     >
                         <ArrowLeft className="h-5 w-5" />
@@ -365,7 +365,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                         <button
                             type="button"
                             onClick={resetChat}
-                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
                         >
                             <RotateCcw className="h-4 w-4" />
                             <span className="hidden sm:inline">Nueva charla</span>
@@ -402,11 +402,11 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                                 </div>
                                 <p className="mt-6 max-w-xl text-xs leading-relaxed text-muted-foreground">
                                     ¿Tenés que hacer un trámite o un reclamo en la Muni? Escribile a{' '}
-                                    <a href={MIGUE_TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-sky-300 hover:underline">
+                                    <a href={MIGUE_TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-sky-700 hover:underline dark:text-sky-300">
                                         Migue por Telegram
                                     </a>{' '}
                                     o entrá a{' '}
-                                    <a href={CIUDAD_DIGITAL_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-sky-300 hover:underline">
+                                    <a href={CIUDAD_DIGITAL_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-sky-700 hover:underline dark:text-sky-300">
                                         Ciudad Digital
                                     </a>
                                     .
@@ -463,7 +463,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                         {chatError && (
                             <div
                                 role="alert"
-                                className="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 sm:flex-row sm:items-center"
+                                className="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100 sm:flex-row sm:items-center"
                             >
                                 <p className="flex-1">{chatError.message}</p>
                                 {chatError.code === 'unauthorized' ? (
@@ -526,7 +526,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                                 <button
                                     type="button"
                                     onClick={() => stop()}
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-foreground transition-colors hover:bg-white/15"
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-foreground/10 text-foreground transition-colors hover:bg-foreground/15"
                                     aria-label="Detener respuesta"
                                     title="Detener"
                                 >
@@ -536,7 +536,7 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                                 <button
                                     type="submit"
                                     disabled={!inputValue.trim() || outOfMessages}
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:bg-white/10 disabled:text-muted-foreground"
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:bg-foreground/10 disabled:text-muted-foreground"
                                     aria-label="Enviar mensaje"
                                     title="Enviar"
                                 >
@@ -548,10 +548,10 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                             <span>La IA puede equivocarse. No compartas claves ni datos bancarios.</span>
                             <span className="flex items-center gap-3">
                                 {charsLeft < 300 && (
-                                    <span className={cn(charsLeft < 50 && 'text-amber-400')}>{charsLeft} caracteres</span>
+                                    <span className={cn(charsLeft < 50 && 'text-amber-700 dark:text-amber-400')}>{charsLeft} caracteres</span>
                                 )}
                                 {remaining !== null && (
-                                    <span className={cn(remaining <= 1 && 'text-amber-400')}>
+                                    <span className={cn(remaining <= 1 && 'text-amber-700 dark:text-amber-400')}>
                                         {remaining === 0
                                             ? 'Sin mensajes por hoy'
                                             : `${remaining} de ${CHAT_DAILY_LIMIT} mensajes por hoy`}

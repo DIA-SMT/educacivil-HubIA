@@ -245,7 +245,7 @@ export function CourseDetailView({ course, relatedGuide }: CourseDetailViewProps
         {/* Sidebar */}
         <div className="flex flex-col gap-4">
           {/* Start CTA */}
-          <div className="glass rounded-2xl p-6 flex flex-col gap-6 sticky top-24 border border-white/5 shadow-2xl relative overflow-hidden">
+          <div className="glass rounded-2xl p-6 flex flex-col gap-6 sticky top-24 border border-border shadow-2xl relative overflow-hidden">
             <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 blur-2xl rounded-full" />
             
             <div className="relative">
