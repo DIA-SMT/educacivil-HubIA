@@ -8,9 +8,12 @@ import {
     Check,
     ChevronDown,
     Copy,
+    ExternalLink,
+    Landmark,
     LayoutGrid,
     LogIn,
     RotateCcw,
+    Send,
     Sparkles,
     Square,
 } from 'lucide-react'
@@ -27,6 +30,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { getGuideMeta, type GuideMeta } from '@/lib/ai-guides/meta'
+import { CIUDAD_DIGITAL_URL, MIGUE_TELEGRAM_URL } from '@/lib/ai-guides/canales'
 import {
     CHAT_DAILY_LIMIT,
     CHAT_MAX_USER_MESSAGE_CHARS,
@@ -283,7 +287,31 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                         )
                     })}
                 </nav>
-                <div className="border-t border-border p-3">
+                <div className="space-y-1 border-t border-border p-3">
+                    <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Trámites y reclamos
+                    </p>
+                    <a
+                        href={MIGUE_TELEGRAM_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                    >
+                        <Send className="h-4 w-4" />
+                        Migue en Telegram
+                        <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-60" />
+                    </a>
+                    <a
+                        href={CIUDAD_DIGITAL_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
+                    >
+                        <Landmark className="h-4 w-4" />
+                        Ciudad Digital
+                        <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-60" />
+                    </a>
+                    <div className="my-1 border-t border-border" />
                     <Link
                         href="/ai-guides"
                         className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
@@ -372,6 +400,17 @@ export function AiChatInterface({ guide, allGuides, initialRemaining }: AiChatIn
                                         </button>
                                     ))}
                                 </div>
+                                <p className="mt-6 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                                    ¿Tenés que hacer un trámite o un reclamo en la Muni? Escribile a{' '}
+                                    <a href={MIGUE_TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-sky-300 hover:underline">
+                                        Migue por Telegram
+                                    </a>{' '}
+                                    o entrá a{' '}
+                                    <a href={CIUDAD_DIGITAL_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-sky-300 hover:underline">
+                                        Ciudad Digital
+                                    </a>
+                                    .
+                                </p>
                             </div>
                         ) : (
                             <div className="space-y-6">
